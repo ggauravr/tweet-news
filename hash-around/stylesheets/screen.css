@@ -1,0 +1,218 @@
+/* Welcome to Compass.
+ * In this file you should write your main styles. (or centralize your imports)
+ * Import this file using the following HTML or equivalent:
+ * <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" /> */
+/* line 14, ../sass/screen.scss */
+html, body, #map-canvas, ul, h3, h4, p {
+  margin: 0px;
+  padding: 0px;
+  font-weight: normal;
+}
+
+/* line 21, ../sass/screen.scss */
+html, body, #map-canvas {
+  height: 100%;
+}
+
+/* line 25, ../sass/screen.scss */
+body {
+  color: #666666;
+  font-family: Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
+}
+
+/* line 34, ../sass/screen.scss */
+a {
+  color: #0b96b9;
+  text-decoration: none;
+}
+
+/* line 39, ../sass/screen.scss */
+ul {
+  list-style-type: none;
+}
+
+/* line 43, ../sass/screen.scss */
+#panel {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  margin-left: -180px;
+  z-index: 5;
+  background-color: #fff;
+  padding: 5px;
+  border: 1px solid #999;
+}
+
+/* line 54, ../sass/screen.scss */
+#map-canvas {
+  float: right;
+  height: 65%;
+  width: 50%;
+  border: 1px solid gray;
+}
+
+/* line 63, ../sass/screen.scss */
+.page-help .container {
+  min-height: 60%;
+  margin-left: 3%;
+}
+/* line 69, ../sass/screen.scss */
+.page-help h3, .page-help h4 {
+  font-weight: bold;
+}
+
+/* line 74, ../sass/screen.scss */
+#panel {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  margin-left: -180px;
+  width: 350px;
+  z-index: 5;
+  background-color: #fff;
+  padding: 5px;
+  border: 1px solid #999;
+}
+
+/* line 86, ../sass/screen.scss */
+#latlng {
+  width: 225px;
+}
+
+/* line 90, ../sass/screen.scss */
+.main-navigation {
+  margin-left: 3%;
+  float: left;
+  width: 60%;
+}
+
+/* line 102, ../sass/screen.scss */
+footer {
+  clear: both;
+  text-align: center;
+  font-size: 13px;
+  padding: 25px 0;
+}
+
+/* line 114, ../sass/screen.scss */
+.horizontal-list li {
+  float: left;
+  margin-right: 10%;
+  width: 10%;
+  cursor: pointer;
+  text-align: center;
+  color: #e75e50;
+  padding: 10px 0;
+}
+/* line 123, ../sass/screen.scss */
+.horizontal-list li.selected-tab {
+  background-color: #e75e50;
+  color: white;
+}
+
+/* line 131, ../sass/screen.scss */
+.caption-container {
+  float: left;
+  font-size: 20px;
+  font-style: italic;
+  margin-left: -10%;
+  padding: 10px 0;
+}
+/* line 138, ../sass/screen.scss */
+.caption-container h4 {
+  display: inline-block;
+}
+
+/* line 143, ../sass/screen.scss */
+.keyword {
+  color: #e75e50;
+}
+
+/* line 147, ../sass/screen.scss */
+#results {
+  float: left;
+  width: 45%;
+  margin-left: 3%;
+}
+
+/* line 153, ../sass/screen.scss */
+#results {
+  list-style-type: none;
+  clear: both;
+  margin-top: 15px;
+}
+/* line 158, ../sass/screen.scss */
+#results img {
+  width: 350px;
+  height: 350px;
+  margin-left: 20%;
+}
+/* line 164, ../sass/screen.scss */
+#results li {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+/* line 169, ../sass/screen.scss */
+#results .username {
+  font-size: 12px;
+  font-style: italic;
+  color: #222;
+}
+
+/* line 176, ../sass/screen.scss */
+.hashtag {
+  color: #fe3725;
+  cursor: pointer;
+}
+
+/* line 181, ../sass/screen.scss */
+.tweet {
+  border-bottom: 1px solid #DDD;
+}
+
+/* line 185, ../sass/screen.scss */
+.clear {
+  clear: both;
+}
+
+/* line 190, ../sass/screen.scss */
+.clearfix:before, .page-help .container:before, .horizontal-list:before,
+.clearfix:after,
+.page-help .container:after,
+.horizontal-list:after {
+  content: " ";
+  /* 1 */
+  display: table;
+  /* 2 */
+}
+
+/* line 195, ../sass/screen.scss */
+.clearfix:after, .page-help .container:after, .horizontal-list:after {
+  clear: both;
+}
+
+/*
+ * For IE 6/7 only
+ * Include this rule to trigger hasLayout and contain floats.
+ */
+/* line 204, ../sass/screen.scss */
+.clearfix, .page-help .container, .horizontal-list {
+  *zoom: 1;
+}
+
+/* line 208, ../sass/screen.scss */
+.app-name {
+  font-family: sans-serif;
+  margin-left: 3%;
+}
+
+/* line 213, ../sass/screen.scss */
+.error {
+  float: left;
+  margin-left: 30%;
+  font-size: 12px;
+  color: #c52f2f;
+  text-decoration: underline;
+  display: inline-block;
+  margin-top: -40px;
+}

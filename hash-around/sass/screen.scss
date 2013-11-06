@@ -1,0 +1,221 @@
+/* Welcome to Compass.
+ * In this file you should write your main styles. (or centralize your imports)
+ * Import this file using the following HTML or equivalent:
+ * <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" /> */
+
+// @import "compass/reset";
+
+$hash-color : #fe3725;
+$link-color : #0B96B9;
+$body-color : #666;
+$tab-color : #E75E50;
+$error-color : rgb(197, 47, 47);
+
+html, body, #map-canvas, ul, h3, h4, p {
+	// height: 100%;
+	margin: 0px;
+	padding: 0px;
+	font-weight : normal;
+}
+
+html, body, #map-canvas{
+	height : 100%;
+}
+
+body{
+	// background-color : #EEE;
+	color : $body-color;
+	font-family: Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
+	// #xlfe3725
+	// #6fccaf
+	// #ff47ad
+}
+
+a{
+	color : $link-color;
+	text-decoration : none;
+}
+
+ul{
+	list-style-type : none;
+}
+
+#panel {
+	position: absolute;
+	top: 5px;
+	left: 50%;
+	margin-left: -180px;
+	z-index: 5;
+	background-color: #fff;
+	padding: 5px;
+	border: 1px solid #999;
+}
+
+#map-canvas{
+	float : right;
+	height : 65%;
+	width  : 50%;
+	border : 1px solid gray;
+}
+
+.page-help{
+
+	.container{
+		@extend .clearfix;
+		min-height : 60%;
+		margin-left : 3%;
+	}
+
+	h3, h4{
+		font-weight : bold;
+	}
+}
+
+#panel {
+	position: absolute;
+	top: 5px;
+	left: 50%;
+	margin-left: -180px;
+	width: 350px;
+	z-index: 5;
+	background-color: #fff;
+	padding: 5px;
+	border: 1px solid #999;
+}
+
+#latlng {
+	width: 225px;
+}
+
+.main-navigation{
+	margin-left : 3%;
+	float : left;
+	width : 60%;
+}
+
+.footer-navigation{
+	// margin-left : 3%;
+	// float : left;
+	// width : 60%;
+}
+
+footer{
+	clear : both;
+	text-align : center;
+	font-size : 13px;
+	padding : 25px 0;
+	// border-top : 1px dotted #DDD;
+}
+
+.horizontal-list{
+	
+	@extend .clearfix;
+
+	li{
+		float : left;
+		margin-right : 10%;
+		width : 10%;
+		cursor : pointer;
+		text-align : center;
+		color : $tab-color;
+		padding : 10px 0;
+
+		&.selected-tab{
+			background-color : $tab-color;
+			color : white;
+		}
+	}
+
+}
+
+.caption-container{
+	float : left;
+	font-size : 20px;
+	font-style : italic;
+	margin-left : -10%;
+	padding: 10px 0;
+
+	h4{
+		display : inline-block;
+	}
+}
+
+.keyword{
+	color : $tab-color;
+}
+
+#results{
+	float : left;
+	width : 45%;
+	margin-left : 3%;
+}
+
+#results{
+	list-style-type : none;
+	clear : both;
+	margin-top : 15px;
+
+	img{
+		width : 350px;
+		height : 350px;
+		margin-left : 20%;
+	}
+
+	li{
+		margin-bottom : 10px;
+		font-size : 14px;
+	}
+
+	.username{
+		font-size : 12px;
+		font-style : italic;
+		color : #222;
+	}
+}
+
+.hashtag{
+	color : $hash-color;
+	cursor : pointer;
+}
+
+.tweet{
+	border-bottom : 1px solid #DDD;
+}
+
+.clear{
+    clear : both;
+}
+
+.clearfix:before,
+.clearfix:after {
+    content: " "; /* 1 */
+    display: table; /* 2 */
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+/*
+ * For IE 6/7 only
+ * Include this rule to trigger hasLayout and contain floats.
+ */
+
+.clearfix {
+    *zoom: 1;
+}
+
+.app-name{
+	font-family : sans-serif;
+	margin-left : 3%;
+}
+
+.error{
+	float: left;
+	margin-left: 30%;
+	font-size: 12px;
+	color: $error-color;
+	text-decoration: underline;
+	display: inline-block;
+	margin-top: -40px;
+}
