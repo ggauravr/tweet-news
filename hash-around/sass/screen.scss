@@ -3,7 +3,7 @@
  * Import this file using the following HTML or equivalent:
  * <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css" /> */
 
-// @import "compass/reset";
+@import "compass/css3";
 
 $hash-color : #fe3725;
 $link-color : #0B96B9;
@@ -51,11 +51,22 @@ ul{
 	border: 1px solid #999;
 }
 
+
+.content-container{
+	overflow: hidden;
+	clear: both;
+	height: 65%;
+	padding: 2px;
+	position : relative;
+}
+
 #map-canvas{
 	float : right;
-	height : 65%;
-	width  : 50%;
+	// height : 65%;
+	width  : 45%;
+	margin-right : 1%;
 	border : 1px solid gray;
+	// margin-top : 15px;
 }
 
 .page-help{
@@ -144,16 +155,22 @@ footer{
 	color : $tab-color;
 }
 
+.loading{
+	text-align : center;
+	padding-top : 2%;
+}
+
 #results{
 	float : left;
 	width : 45%;
 	margin-left : 3%;
-}
-
-#results{
+	height : 100%;
+	max-height : 100%;
+	overflow : auto;
 	list-style-type : none;
 	clear : both;
-	margin-top : 15px;
+	// margin-top : 15px;
+	border: 1px solid #EEE;
 
 	img{
 		width : 350px;
@@ -218,4 +235,62 @@ footer{
 	text-decoration: underline;
 	display: inline-block;
 	margin-top: -40px;
+}
+
+.arrow{
+	display : none;
+}
+
+@media screen and (max-width: 480px){
+
+	.main-navigation{
+		float : none;
+		width : 100%;
+
+		li{
+			padding : 10px 5px;
+			width : auto;
+		}
+	}
+
+	.caption-container{
+		margin-left : 3%;
+		float : none;
+		font-size : 15px;
+	}
+
+	#results{
+		float : none;
+		width : 94%;
+		margin : auto;
+	}
+
+	#map-canvas{
+		position : absolute !important;
+		float : none;
+		right : -105%;
+		width : 100%;
+		top : 0;
+		
+		@include transition-property(right);
+		@include transition-duration(1s);
+
+		&.in-view{
+			right : 0;
+		}
+	}
+
+	.arrow{
+		position: absolute;
+		display : block;
+		top: 45%;
+		background-color: #888;
+		color: white;
+		padding: 10px;
+		border-radius: 5px;
+		font-size: 12px;
+		right: -5px;
+		padding-right: 20px;
+		z-index : 10;
+	}
 }

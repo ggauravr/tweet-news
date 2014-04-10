@@ -7,5 +7,11 @@ handlers:
 - url: /scripts
   static_dir: scripts
 
+- url: /stylesheets
+  static_dir: stylesheets
+
+- url: /images
+  static_dir: images
+
 - url: /.*
-  script: index.php
+  script: new.php

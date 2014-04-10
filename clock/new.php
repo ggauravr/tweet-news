@@ -1,11 +1,17 @@
 <?php
 
 if($_GET['q'] != ''){
-  $getQuery = '?q=%23'.urlencode($_GET['q']);  
+  $getQuery = '?count='.$_GET['count'].'&lang=en&q='.urlencode($_GET['q']);  
   $url = 'https://api.twitter.com/1.1/search/tweets.json'.$getQuery;
 
+}
+else if($_GET['latitude'] != ''){
+  $getQuery = '?count='.$_GET['count'].'&lang=en&result_type=recent&geocode='.$_GET['latitude'].','.$_GET['longitude'].',15mi';  
+  $url = 'https://api.twitter.com/1.1/search/tweets.json'.$getQuery;
+}
 // $url = 'https://api.twitter.com/1.1/statuses/user_timeline.json?count=100&screen_name=twitterapi';
 
+if(isset($_GET['data'])){
   $options = array(
       'http' => array(
           'method' => 'GET',
@@ -34,59 +40,32 @@ if($_GET['q'] != ''){
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
     <title>Reverse Geocoding</title>
-    <style>
-      html, body, #map-canvas {
-        height: 100%;
-        margin: 0px;
-        padding: 0px
-      }
-      #panel {
-        position: absolute;
-        top: 5px;
-        left: 50%;
-        margin-left: -180px;
-        z-index: 5;
-        background-color: #fff;
-        padding: 5px;
-        border: 1px solid #999;
-      }
-
-      #map-canvas{
-      	float : right;
-      	height : 50%;
-      	width : 50%;
-      }
-    </style>
-    <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
-    <script type="text/javascript" src="/scripts/app.js"></script>
+    <link href="stylesheets/screen.css" rel="stylesheet" type="text/css">
     
-    <style>
-      #panel {
-        position: absolute;
-        top: 5px;
-        left: 50%;
-        margin-left: -180px;
-        width: 350px;
-        z-index: 5;
-        background-color: #fff;
-        padding: 5px;
-        border: 1px solid #999;
-      }
-      #latlng {
-        width: 225px;
-      }
-    </style>
   </head>
   <body>
-    <div id="panel">
+    <!-- <div id="panel">
       <input id="latlng" type="text" value="40.714224,-73.961452">
       <input type="button" value="Reverse Geocode" onclick="codeLatLng()">
-    </div>
-    <div id="map-canvas"></div>
-    <input type="text" id="longitude" />
-    <ul id="results">
-    	
+    </div> -->
+    
+    <ul class="navigation horizontal-list clearfix">
+      <li class="about" id="about"><h4>About</h4></li>
+      <li class="around"><h4>Around</h4></li>
+      <!-- <li class="trends"><h3>Trends</h3></li> -->
     </ul>
+    
+    <p class="caption-container">
+    <span class="caption">what people are saying about </span><span class="keyword"></span>
+    </p>
+    <!-- <input type="text" id="longitude" /> -->
+    <ul id="results"></ul>
+
+    <div id="map-canvas"></div>
+
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script type="text/javascript" src="/scripts/app1.js"></script>
+
   </body>
 </html>

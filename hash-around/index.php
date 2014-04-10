@@ -39,7 +39,7 @@ if(isset($_GET['data'])){
   <head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
-    <title>#HashAround</title>
+    <title>#Hash-Around</title>
     <link href="stylesheets/screen.css" rel="stylesheet" type="text/css">
     
     <?php 
@@ -53,7 +53,7 @@ if(isset($_GET['data'])){
       <input type="button" value="Reverse Geocode" onclick="codeLatLng()">
     </div> -->
 
-    <h2 class="app-name"><a href="/">#HashAround</a></h2>
+    <h2 class="app-name"><a href="/">#Hash-Around</a></h2>
     <span class="error"></span>
     
     <ul class="main-navigation horizontal-list clearfix">
@@ -65,11 +65,13 @@ if(isset($_GET['data'])){
     <div class="caption-container">
     <h4 class="caption">what people are saying&nbsp;</h4><h4 class="keyword"></h4>
     </div>
-    <!-- <input type="text" id="longitude" /> -->
-    <ul id="results"></ul>
+    
+    <div class="content-container">
+      <ul id="results"></ul>
+      <span class="arrow">Map</span>
+      <div id="map-canvas"></div>
 
-    <div id="map-canvas"></div>
-
+    </div>
 
     <footer class="clearfix">
       <p>

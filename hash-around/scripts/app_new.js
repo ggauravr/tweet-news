@@ -1,293 +1,319 @@
 var APP = APP || {};
 
-APP.Maps 	= (function(){
+APP.Maps = (function() {
 
 	var
 
-	mapOptions = {
-		zoom : 8,
-		center : null,
-		mapTypeId : 'roadmap'
-	},
+		mapOptions = {
+			zoom: 8,
+			center: null,
+			mapTypeId: 'roadmap'
+		},
 
-	map = null,
+		map = null,
 
-	marker = null,
+		marker = null,
 
-	geocoder = new google.maps.Geocoder(),
+		geocoder = new google.maps.Geocoder(),
 
-	init = function(currentLocation){
+		init = function(currentLocation) {
 
-		map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+			map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-		bindClick();
+			bindClick();
 
-	},
+		},
 
-	bindClick = function(){
+		bindClick = function() {
 
-		google.maps.event.addListener(map, 'click', function(evt){
-			APP.Main.update(evt);
-		});
+			google.maps.event.addListener(map, 'click', function(evt) {
+				APP.Main.update(evt);
+			});
 
-	},
+		},
 
-	getLocation = function(){
+		getLocation = function() {
 
-	},
+		},
 
-	update = function(currentLocation){
+		update = function(currentLocation) {
 
-		var currentPlaceMarker;
+			var currentPlaceMarker;
 
-		mapOptions.center = new google.maps.LatLng(currentLocation.latitude,currentLocation.longitude);
+			// update the clicked place to be the map's center
+			mapOptions.center = new google.maps.LatLng(currentLocation.latitude, currentLocation.longitude);
 
-		// will be called only the very first time
-		if(!map){
-			init(currentLocation);
+			// will be called only the very first time
+			if (!map) {
+				init(currentLocation);
+			}
+
+			// update center of the map
+			// clear all the markers, and create a new one
+			map.setCenter(mapOptions.center);
+
+			currentPlaceMarker = new google.maps.Marker({
+				map: map,
+				position: mapOptions.center
+			});
+
+			if (marker) {
+				marker.setMap(null);
+			}
+
+			marker = currentPlaceMarker;
+
+			// call geocoder API only if the location is changed, not on every interval call
+			if (APP.Main.hasLocationChanged()) {
+				
+				// get formatted address, via reverse geocoding, then get tweets
+				geocoder.geocode({
+					latLng: mapOptions.center
+				}, function(results, status) {
+
+					// prepare the address.. call get tweets
+					if (status == google.maps.GeocoderStatus.OK) {
+
+						var places = results[0].formatted_address.split(','),
+							length = places.length,
+							place = length > 2 ? isNaN(places[length - 3]) ? places[length - 3] : places[length - 2] : places[length - 2];
+
+						APP.UI.update(place);
+
+						// update the UI with the new location name
+						APP.Tweets.get(place, {
+							reset: true
+						});
+
+					} else {
+						alert('GeoCoder Error.. ' + status);
+					}
+				});
+			} else {
+				APP.Tweets.get('');
+			}
+
+
 		}
-
-		// update center of the map
-		// clear all the markers, and create a new one
-		map.setCenter(mapOptions.center);
-
-		currentPlaceMarker = new google.maps.Marker({
-			map : map,
-			position : mapOptions.center
-		});
-
-		if(marker){
-			marker.setMap(null);
-		}
-
-		marker = currentPlaceMarker;
-
-		if(APP.Main.hasLocationChanged()){
-			console.log('getocode called');
-			// get formatted address, via reverse geocoding, then get tweets
-			geocoder.geocode({ latLng : mapOptions.center }, function(results, status){
-
-				// prepare the address.. call get tweets
-				console.log("geocoder response");
-				console.log(results);
-
-				if(status == google.maps.GeocoderStatus.OK){
-
-					var places = results[0].formatted_address.split(','),
-	                	length = places.length,
-	                	place  = length > 2 ? isNaN(places[length-3]) ? places[length-3] : places[length-2] : places[length-2]; 
-	             	
-	             	// update the UI with the new location name
-	             	APP.Tweets.get(place, {
-	             		reset : true
-	             	});
-
-				}
-				else{
-					alert('GeoCoder Error.. ' + status);
-				}
-			});	
-		}
-		else{
-			APP.Tweets.get('');
-		}
-		
-
-	}
 
 	return {
-		init : init,
-		update : update
+		init: init,
+		update: update
 	}
 
 })();
 
-APP.Tweets 	= (function(){
+APP.Tweets = (function() {
 
-	var 
+	var
 	interval = 25000,
-	intervalID = null,
+		intervalID = null,
 
-	resetInterval = function(){
-		clearInterval(intervalID);
-		intervalID = null;
-	},
+		resetInterval = function() {
+			clearInterval(intervalID);
+			intervalID = null;
+		},
 
-	getTweets = function(place, param){
+		getTweets = function(place, param) {
 
-		if(place){
-			APP.UI.update(place);
-		}
-		
-		if(param && param.reset){
-			resetInterval();
-		}
-
-		console.log('gettweets called' , intervalID);
-
-		var callee = arguments.callee,
-			promiseTweets = $.ajax({
-				url  : getBaseURL() + getQueryParams(),
-				type : 'GET',
-				dataType : 'json',
-				headers : {
-	                'Authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAAPEcUQAAAAAAdlMqHKIwXIg4S4tyviSIepy%2FzlU%3Df6FnvB64S3TV1Eu1mqylXvLEsuFlfkPmfQy7tQ4TZ5QmkS4vyP',
-	                'protocol_version' : 1.1,
-	            }
-			});
-
-		promiseTweets.done(function(results){
-			console.log('Tweets');
-			console.log(results);
-
-			APP.UI.render(results.statuses);
-
-			if(!intervalID){
-				intervalID = setInterval(callee, interval);
+			if (place) {
+				APP.UI.update(place);
 			}
 
-		});
+			if (param && param.reset) {
+				resetInterval();
+			}
 
-	},
+			APP.UI.render();
 
-	getQueryParams = function(){
+			var callee = arguments.callee,
+				promiseTweets = $.ajax({
+					url: getBaseURL() + getQueryParams(),
+					type: 'GET',
+					dataType: 'json',
+					headers: {
+						'Authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAAPEcUQAAAAAAdlMqHKIwXIg4S4tyviSIepy%2FzlU%3Df6FnvB64S3TV1Eu1mqylXvLEsuFlfkPmfQy7tQ4TZ5QmkS4vyP',
+						'protocol_version': 1.1,
+					}
+				});
 
-		var query = '?count=10&data=1';
+			promiseTweets.done(function(results) {
+				// console.log('Tweets');
+				// console.log(results);
 
-		if(APP.UI.getType() == 'about'){
-			query += '&q='+APP.UI.getPlace()
-		}
-		else{
-			query += '&latitude='+APP.Main.getCurrentLocation().latitude+'&longitude='+APP.Main.getCurrentLocation().longitude;
-		}
+				APP.UI.render(results.statuses);
 
-		return query;
-	},
+				if (!intervalID) {
+					intervalID = setInterval(callee, interval);
+				}
 
-	getBaseURL = function(){
-		return '/index.php'
-	};
+			});
+
+		},
+
+		getQueryParams = function() {
+
+			var query = '?count=10&data=1';
+
+			if (APP.UI.getType() == 'about') {
+				query += '&q=' + APP.UI.getPlace()
+			} else {
+				query += '&latitude=' + APP.Main.getCurrentLocation().latitude + '&longitude=' + APP.Main.getCurrentLocation().longitude;
+			}
+
+			return query;
+		},
+
+		getBaseURL = function() {
+			return '/index.php'
+		};
 
 	return {
-		get : getTweets
+		get: getTweets
 	}
 
 })()
 
 APP.Templates = {
-
-	tweet : '<li class="tweet">{text} \
+	tweetsLoading : '<li class="loading">Loading Tweets.. Please Wait</li>',
+	tweet: '<li class="tweet">{text} \
 				<br/>\
 				by\
 				<span class="username">{username}</span>\
 			</li>\
 			',
-	tweetFail : '<li class="tweet">Nothing happening here.. Try some other place ! :)</li>',
+	tweetFail: '<li class="tweet">Nothing happening here.. Try some other place ! :)</li>',
 
-	tweetLink : '<a target="_blank" href="{match}">{match}</a>',
-	hashLink  : '<a target="_blank" href="http://www.twitter.com/search?src=hash&q=%23{hash}" class="hashtag">{match}</a>'
+	tweetLink: '<a target="_blank" href="{match}">{match}</a>',
+	hashLink: '<a target="_blank" href="http://www.twitter.com/search?src=hash&q=%23{hash}" class="hashtag">{match}</a>'
 };
 
 APP.Regex = {
-	hash : '#[\\w]+',
-	link : '(http:\\/\\/[^\\s\\)\\(]+)'
+	hash: '#[\\w]+',
+	link: '(http:\\/\\/[^\\s\\)\\(]+)'
 }
 
-APP.UI 	= (function(){
+APP.UI = (function() {
 
-	var 
-	type = 'about',
-	place = '',
+	var
+		type = 'about',
+		place = '',
 
-	bindEvents = function(){
+		bindEvents = function() {
 
-		$('.main-navigation li').click(function(e){
-			type = e.target.getAttribute('id');
-			
-			$('.selected-tab').removeClass('selected-tab');
-    		$(this).addClass('selected-tab');
-			
-			APP.Tweets.get('', {
-				reset : true
+			$('.main-navigation li').click(function(e) {
+				type = this.getAttribute('id');
+
+				console.log(e, type);
+
+				$('.selected-tab').removeClass('selected-tab');
+				$(this).addClass('selected-tab');
+
+				updateLocation(place);
+
+				APP.Tweets.get('', {
+					reset: true
+				});
+
 			});
-		});
 
-	},
+			$('.arrow').click(function(e){
 
-	updateLocation = function(location){
-		place = location;
+				var $this = $(this),
+						$mapCanvas = $('#map-canvas');
 
-		$('.keyword').text(type + ' ' +place);
-	},
+				if($this.hasClass('showing')){
+					$this.removeClass('showing').text('Map');
+					$mapCanvas.removeClass('in-view');	
+				}
+				else{
+					$this.addClass('showing').text('Hide')
+					$mapCanvas.addClass('in-view');
+				}
 
-	getType = function(){
-		return type;
-	},
+				
+			});
 
-	getPlace = function(){
-		return place;
-	},
+		},
 
-	renderTweets = function(results){
+		updateLocation = function(location) {
+			place = location;
 
-		console.log("Results before changes");
-		console.log(results);
+			$('.keyword').text(type + ' ' + place);
+		},
 
-		var list = '', text ;
+		getType = function() {
+			return type;
+		},
 
-		if(!results.length){
-    		list = APP.Templates.tweetFail;
-        }
-        else{
-          for(var i in results){
+		getPlace = function() {
+			return place;
+		},
 
-	          item = results[i];
-	          text = item.text;
+		renderTweets = function(results) {
 
-	          // console.log(item);
+			var list = '',
+				text,
+				i, j, item, tmpl, matches, regex, hash, temp;
 
-	          tmpl = APP.Templates.tweet;
+			// while loading tweets, before ajax results are fetched
 
-	          var matches = text.match(new RegExp(APP.Regex.link, "g"));
-	          var regex, hash ,temp;
+			if(!results){
+				list = APP.Templates.tweetsLoading;
+				$('#results').html(list);
+				return;
+			}
 
-	          for(var i in matches){
-	            regex = new RegExp(matches[i], "g");
-	            text = text.replace(regex, APP.Templates.tweetLink.replace(/{match}/g, matches[i]));
+			// if no tweets about/around the given place
+			if (!results.length) {
+				list = APP.Templates.tweetFail;
+			} else {
+				for (i in results) {
 
-	          } 
+					item = results[i];
+					text = item.text;
 
-	          matches = text.match(new RegExp(APP.Regex.hash, "g"));
-	          for(var i in matches){
-	            regex = new RegExp(matches[i], "g");
-	            hash = matches[i].slice(1, matches[i].length);
-	            text = text.replace(regex, APP.Templates.hashLink.replace(/{match}/g, matches[i]).replace(/{hash}/g, hash));
+					tmpl = APP.Templates.tweet;
 
-	          }
+					matches = text.match(new RegExp(APP.Regex.link, "g"));
+					
+					for (j in matches) {
+						regex = new RegExp(matches[j], "g");
+						text = text.replace(regex, APP.Templates.tweetLink.replace(/{match}/g, matches[j]));
 
-	          tmpl = tmpl.replace(/{text}/, text);
-	          tmpl = tmpl.replace(/{username}/, item.user.screen_name);
+					}
 
-	          list += tmpl;
-	        }
+					matches = text.match(new RegExp(APP.Regex.hash, "g"));
+					for (j in matches) {
+						regex = new RegExp(matches[j], "g");
+						hash = matches[j].slice(1, matches[j].length);
+						text = text.replace(regex, APP.Templates.hashLink.replace(/{match}/g, matches[j]).replace(/{hash}/g, hash));
 
-        }
-                
-        $('#results').html(list);
+					}
 
-	};
+					tmpl = tmpl.replace(/{text}/, text);
+					tmpl = tmpl.replace(/{username}/, item.user.screen_name);
+
+					list += tmpl;
+				}
+
+			}
+
+			$('#results').html(list);
+
+		};
 
 	return {
-		bindEvents : bindEvents,
-		update : updateLocation,
-		getType : getType,
-		getPlace : getPlace,
-		render : renderTweets
+		bindEvents: bindEvents,
+		update: updateLocation,
+		getType: getType,
+		getPlace: getPlace,
+		render: renderTweets
 	}
 
 })()
 
-APP.Main = (function(){
+APP.Main = (function() {
 
 	/*
 		Default : Mountain View, California
@@ -299,82 +325,79 @@ APP.Main = (function(){
 	var
 	isLocationChanged = true,
 
-	defaultLocation = {
-		coords : {
-			
-			latitude : '37.3894',
-        	longitude : '-122.0819'
+		defaultLocation = {
+			coords: {
 
-		}
+				latitude: '37.3894',
+				longitude: '-122.0819'
 
-	},
+			}
 
-	lastLocation = {
-		latitude : null,
-		longitude : null
-	},
+		},
 
-	currentLocation = {
-		latitude : null,
-		longitude : null
-	},
+		lastLocation = {
+			latitude: null,
+			longitude: null
+		},
 
-	updateLocation = function(position){
+		currentLocation = {
+			latitude: null,
+			longitude: null
+		},
 
-		if(!position){
-			position : defaultLocation
-		}
+		updateLocation = function(position) {
 
-		// if(position){
+			if (!position) {
+				position: defaultLocation
+			}
+
+			// if(position){
 
 			lastLocation.latitude = currentLocation.latitude;
 			lastLocation.longitude = currentLocation.longitude;
 
-			if(position.coords){
-				currentLocation.latitude 	= position.coords.latitude;
-				currentLocation.longitude 	= position.coords.longitude;
-			}
-			else if(position.latLng){
-				currentLocation.latitude 	= position.latLng.lb || position.latLng.nb;
-				currentLocation.longitude 	= position.latLng.mb || position.latLng.ob;
+			if (position.coords) {
+				currentLocation.latitude = position.coords.latitude;
+				currentLocation.longitude = position.coords.longitude;
+			} else if (position.latLng) {
+				currentLocation.latitude = position.latLng.lat();
+				currentLocation.longitude = position.latLng.lng();
 			}
 
 			isLocationChanged = true;
-			if(	lastLocation.latitude == currentLocation.latitude
-				&&
+			if (lastLocation.latitude == currentLocation.latitude &&
 				lastLocation.longitude == currentLocation.longitude
-				){
+			) {
 				isLocationChanged = false;
 			}
-		// }
+			// }
 
-		APP.Maps.update(currentLocation);
-	},
+			APP.Maps.update(currentLocation);
+		},
 
-	handleGeoLocationError = function(error){
-		/*handle error message*/
-		updateLocation();
-	},
+		handleGeoLocationError = function(error) {
+			/*handle error message*/
+			updateLocation();
+		},
 
-	init = function(){
+		init = function() {
 
-		if(navigator.geolocation){
-			navigator.geolocation.getCurrentPosition(updateLocation, handleGeoLocationError);
+			if (navigator.geolocation) {
+				navigator.geolocation.getCurrentPosition(updateLocation, handleGeoLocationError);
+			} else {
+
+			}
+
+			APP.UI.bindEvents();
 		}
-		else{
-
-		}
-
-		APP.UI.bindEvents();
-	}
 
 	return {
-		init : init,
-		update : updateLocation,
-		hasLocationChanged : function(){
+		init: init,
+		update: updateLocation,
+		hasLocationChanged: function() {
 			return isLocationChanged;
 		},
-		getCurrentLocation : function(){
+		getCurrentLocation: function() {
 			return currentLocation;
 		}
 	}

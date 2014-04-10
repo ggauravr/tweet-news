@@ -5,6 +5,18 @@ var infowindow = new google.maps.InfoWindow();
 var marker;
 function initialize() {
   geocoder = new google.maps.Geocoder();
+
+
+  if(navigator.geolocation){
+
+    navigator.geolocation.getCurrentPosition(showMap);
+    
+  }
+
+  function showMap(position){
+    console.log(position);
+  }
+
   var latlng = new google.maps.LatLng(40.730885,-73.997383);
   var mapOptions = {
     zoom: 8,

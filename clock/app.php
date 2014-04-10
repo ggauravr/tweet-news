@@ -98,6 +98,7 @@ $settings = array(
       success : function(response){
         console.log(response);
       }
+      
     });
 
 
