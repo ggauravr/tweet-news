@@ -3,8 +3,21 @@ import webapp2
 from google.appengine.ext import ndb
 from google.appengine.api import memcache
 import json
+import numpy as np
 
 import ndbmodels
+
+N_ACTIVITIES = 6
+N_RINGER_MODES = 3
+# 0 - WORK HOUR, 1 - OTHER
+N_HOUR = 2
+# 0 - AM , 1 PM
+N_AM_PM = 2
+# 0 - WEEKDAY, 1 - WEEKEND
+N_DAY_OF_WEEK = 2
+N_BIAS = 1
+
+N_DIMENSIONS =  N_ACTIVITIES + N_RINGER_MODES + N_HOUR + N_AM_PM + N_DAY_OF_WEEK + N_BIAS
 
 class MainHandler(webapp2.RequestHandler):
 
@@ -26,150 +39,17 @@ class MainHandler(webapp2.RequestHandler):
         """
       self.response.write(MAIN_PAGE_HTML)
 
-class SampleHandler(webapp2.RequestHandler):
-
-  def get(self):
-
-    qry = model.Sample.query()
-
-    if qry.count() <= 0:
-      # send the latest parameter
-      param = memcache.get('param')
-
-      self.response.headers['Content-Type'] = 'application/json'
-      self.response.write(json.dumps({ 'status' : 'done', 'data' : param }))
-      return
-
-    keys = qry.fetch(keys_only=True)[:150]
-
-    entities = ndb.get_multi(keys);
-    ndb.delete_multi(keys)
-
-    samples = []
-
-    for sample in entities:
-      samples.append({ 'k' : sample.key.id(), 'f' : sample.feature, 'l' : sample.label })
-
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.write(json.dumps({ 'status' : 'success', 'data' : samples }))
-
-class ParameterHandler(webapp2.RequestHandler):
-
-  def get(self):
-
-    client = memcache.Client()
-    param = memcache.get('param')
-
-    if param is None or param == '':
-      # create the paramater in the data store and update the cache
-      newParam = model.Parameter(id="param", feature=str([0]*785))
-      newParam.put()
-
-      memcache.add(key='param', value=newParam.feature)
-
-    param = client.gets('param')
-
-    self.response.headers['Content-Type'] = 'text/plain'
-    self.response.write(param)
-
-  def post(self):
-
-    # get the param from the DB, update it.. and update the cache
-    qry = model.Parameter.query()
-    param = qry.fetch(1)[0]
-
-    param.feature = self.request.POST['feature']
-    param.put()
-
-    memcache.set('param', param.feature)
-
 class ClearHandler(webapp2.RequestHandler):
-  
   def get(self):
-    
-    # delete all the samples from the database
-    samples = model.Sample.query().fetch(keys_only=True)
-    ndb.delete_multi(samples)
+      
+      # delete all the samples from the database
+      samples = ndbmodels.Sample.query().fetch(keys_only=True)
+      ndb.delete_multi(samples)
 
-    # flush memcache
-    memcache.flush_all()
+      # flush memcache
+      memcache.flush_all()
 
-    # refill the DB
-    self.populate()
-
-    self.response.write('Samples repopulated.. Memcached cleared')
-
-  def populate(self):
-    ''' method to load the training samples and labels from the file and store them in the DB Store '''
-
-    limit = 50
-
-    trainingSamples = []
-    trainingLabels = []
-
-    count = 0
-    with open('trainingFeature.dat') as trainingSamplesFH:
-      for sample in trainingSamplesFH:
-
-        if count >= limit:
-          break
-
-        sample = list(map(int, sample.strip().split()))
-        trainingSamples.append(sample)
-
-        count += 1
-
-    count = 0
-    with open('trainingLabel.dat') as trainingLabelsFH:
-      for label in trainingLabelsFH:
-
-        if count >= limit:
-          break
-
-        label = int(label.strip())
-        trainingLabels.append(label)
-
-        count += 1
-
-    for index in range(len(trainingSamples)):
-      sample = model.Sample(
-        feature=trainingSamples[index],
-        label=trainingLabels[index],
-        isUsed=False
-      )
-      sample.put()
-
-class TestAndroidHandler(webapp2.RequestHandler):
-
-  def get(self):
-    client = memcache.Client()
-    param = memcache.get('model')
-
-    if param is None:
-      # create the paramater in the data store and update the cache
-      newParam = model.Parameter(id="model", feature=str([0]*5))
-      newParam.put()
-
-    memcache.add(key='param', value=newParam.feature)
-    param = client.gets('param')
-    model = { 'model' : param }
-
-    self.response.headers['Content-Type'] = 'application/json'
-    self.response.write(json.dumps(param))
-
-  def post(self):
-
-    commObject = json.loads(self.request.POST['sample'])
-    sample = eval(commObject['sample'])
-    sampleID = sample[0]
-    
-    response = {
-      'cmd' : 'delete',
-      'value' : sampleID
-    }
-
-    self.response.headers['Content-Type'] = 'text/plain'
-    self.response.write(json.dumps(response))    
+      self.response.write('Samples repopulated.. Memcached cleared')
 
 class ActivityRequestHandler(webapp2.RequestHandler):
 
@@ -187,9 +67,10 @@ class ActivityRequestHandler(webapp2.RequestHandler):
       # without lock, might lead to race conditions
       shared_model = memcache.get('shared_model')
       if shared_model is None:
-          new_model = ndbmodels.Model(id="shared_model", param=str([0]*5))
+          # create a new model in DB and update cache
+          new_model = ndbmodels.Model(id="shared_model", param=str([0]*N_DIMENSIONS))
           new_model.put()
-          memcache.add(key='shared_model', value=new_model.param)
+          memcache.add(key='shared_model', value= str([0]*N_DIMENSIONS))
 
     # after lock released
     shared_model = memcache.get('shared_model')
@@ -201,7 +82,7 @@ class ActivityRequestHandler(webapp2.RequestHandler):
 
     post_request = self.request.POST
 
-    if 'model' in post_request:
+    if 'gradient' in post_request:
       # acquire lock on the model
       # update it
       # update memcache
@@ -210,20 +91,39 @@ class ActivityRequestHandler(webapp2.RequestHandler):
       client = memcache.Client()
 
       with ndbmodels.Model.getLock():
+        # convert the string gradient to a list -> to a numpy array
+        gradient = np.array(eval(post_request['gradient']))
+        response = None
+
         shared_model = memcache.get('shared_model')
         if shared_model is None:
-          new_model = ndbmodels.Model(id="shared_model", param=post_request['model'])
+          # create a new model, update it
+          param = np.array([0]*N_DIMENSIONS)
+          param = param - gradient * (ndbmodels.Model.getLambda()/ndbmodels.Model.getSampleCount())
+          
+          response = str(param.tolist())
+          ndbmodels.Model.updateSampleCount()
+
+          new_model = ndbmodels.Model(id="shared_model", param=response)
           new_model.put()
-          memcache.add(key='shared_model', value = new_model.param)
+          memcache.add(key='shared_model', value = response)
         else:
+          
           model = ndbmodels.Model.get_by_id('shared_model')
-          model.param = post_request['model']
-          model.put() # supposed to auto update the key in memcache
-          memcache.set(key='shared_model', value = model.param)
+          param = np.array(eval(shared_model))
+          param = param - gradient * (ndbmodels.Model.getLambda()/ndbmodels.Model.getSampleCount())
+
+          response = str(param.tolist())
+          ndbmodels.Model.updateSampleCount()
+
+          model.param = response
+          model.put()
+          memcache.set(key='shared_model', value = response)
 
       response = {
         'cmd' : 'save',
-        'value' : post_request['model']
+        'value' : response,
+        'n_samples' : ndbmodels.Model.getSampleCount()
       }
           
     elif 'sample' in post_request:
@@ -234,27 +134,14 @@ class ActivityRequestHandler(webapp2.RequestHandler):
       # update is_used = true
         samples = eval(post_request['sample'])
         samplesToBeStored = []
-        client_sample_ids = []
 
         for sample in samples:
-
-          client_sample_ids.append(sample[0])
-          new_sample = ndbmodels.Sample(
-              user_activity = sample[1],
-              ringer_mode = sample[2],
-              day_of_week = sample[3],
-              approx_time = sample[4],
-              hour_of_day = sample[5],
-              label_client_predicted = sample[6],
-              label_original = sample[7]
-            )
+          new_sample = ndbmodels.Sample(value = str(sample))
           samplesToBeStored.append(new_sample)
 
-          # future_object = new_sample.put_async()
         sample_ids = ndb.put_multi(samplesToBeStored)
         response = {
-          'cmd' : 'delete',
-          'value' : str(client_sample_ids)
+          'cmd' : 'delete'
         }
 
           # new_sample_id = future_object.get_result().id()
@@ -270,8 +157,6 @@ class ActivityRequestHandler(webapp2.RequestHandler):
 
 application = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/samples', SampleHandler),
-    ('/param', ParameterHandler),
-    ('/activity_api', ActivityRequestHandler),
     ('/clear', ClearHandler),
+    ('/activity_api', ActivityRequestHandler),
 ], debug=True)
