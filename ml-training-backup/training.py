@@ -3,21 +3,11 @@ import webapp2
 from google.appengine.ext import ndb
 from google.appengine.api import memcache
 import json
-import numpy as np
+import numpy
+import math
 
 import ndbmodels
-
-N_ACTIVITIES = 6
-N_RINGER_MODES = 3
-# 0 - WORK HOUR, 1 - OTHER
-N_HOUR = 2
-# 0 - AM , 1 PM
-N_AM_PM = 2
-# 0 - WEEKDAY, 1 - WEEKEND
-N_DAY_OF_WEEK = 2
-N_BIAS = 1
-
-N_DIMENSIONS =  N_ACTIVITIES + N_RINGER_MODES + N_HOUR + N_AM_PM + N_DAY_OF_WEEK + N_BIAS
+import constants as Constants
 
 class MainHandler(webapp2.RequestHandler):
 
@@ -68,9 +58,9 @@ class ActivityRequestHandler(webapp2.RequestHandler):
       shared_model = memcache.get('shared_model')
       if shared_model is None:
           # create a new model in DB and update cache
-          new_model = ndbmodels.Model(id="shared_model", param=str([0]*N_DIMENSIONS))
+          new_model = ndbmodels.Model(id="shared_model", param=str([0]*Constants.N_DIMENSIONS))
           new_model.put()
-          memcache.add(key='shared_model', value= str([0]*N_DIMENSIONS))
+          memcache.add(key='shared_model', value= str([0]*Constants.N_DIMENSIONS))
 
     # after lock released
     shared_model = memcache.get('shared_model')
@@ -81,24 +71,58 @@ class ActivityRequestHandler(webapp2.RequestHandler):
   def post(self):
 
     post_request = self.request.POST
-
-    if 'gradient' in post_request:
-      # acquire lock on the model
-      # update it
-      # update memcache
-      # release lock
+    
+    if 'sample' in post_request:
       
-      client = memcache.Client()
+      sample = eval(post_request['sample'])
+
+      new_sample = ndbmodels.Sample(value = str(sample))
+
+      # predict the label using the current model stored
+      # then update the model using sent gradient
+      
+      with ndbmodels.Model.getLock():
+        # without lock, might lead to race conditions
+        shared_model = memcache.get('shared_model')
+        if shared_model is None:
+            # create a new model in DB and update cache
+            new_model = ndbmodels.Model(id="shared_model", param=str([0]*Constants.N_DIMENSIONS))
+            new_model.put()
+            memcache.add(key='shared_model', value= str([0]*Constants.N_DIMENSIONS))
+
+      # after lock released
+      shared_model = memcache.get('shared_model')
 
       with ndbmodels.Model.getLock():
+        # x = new_sample.predict()
+        w = numpy.array(eval(shared_model))
+        x = numpy.array(sample[0:Constants.N_DIMENSIONS])
+        wx = numpy.dot(w, x)
+
+        probability = 1 / (1 + math.exp(-wx))
+        if probability > 0.5:
+          new_sample.predicted_value = 1
+        else:
+          new_sample.predicted_value = 0
+
+        new_sample.is_used = True
+
+        print "w : ", w
+        print "x : ", x
+        print "wx : ", wx
+
+        sample_id = new_sample.put()
+
+      # update model
+      with ndbmodels.Model.getLock():
         # convert the string gradient to a list -> to a numpy array
-        gradient = np.array(eval(post_request['gradient']))
+        gradient = numpy.array(eval(post_request['gradient']))
         response = None
 
         shared_model = memcache.get('shared_model')
         if shared_model is None:
           # create a new model, update it
-          param = np.array([0]*N_DIMENSIONS)
+          param = numpy.array([0]*Constants.N_DIMENSIONS)
           param = param - gradient * (ndbmodels.Model.getLambda()/ndbmodels.Model.getSampleCount())
           
           response = str(param.tolist())
@@ -110,7 +134,7 @@ class ActivityRequestHandler(webapp2.RequestHandler):
         else:
           
           model = ndbmodels.Model.get_by_id('shared_model')
-          param = np.array(eval(shared_model))
+          param = numpy.array(eval(shared_model))
           param = param - gradient * (ndbmodels.Model.getLambda()/ndbmodels.Model.getSampleCount())
 
           response = str(param.tolist())
@@ -120,37 +144,11 @@ class ActivityRequestHandler(webapp2.RequestHandler):
           model.put()
           memcache.set(key='shared_model', value = response)
 
-      response = {
-        'cmd' : 'save',
-        'value' : response,
-        'n_samples' : ndbmodels.Model.getSampleCount()
-      }
-          
-    elif 'sample' in post_request:
-      # create a new sample object from the constructor
-      # save async, get future
-      # send the id back, for deletion
-      # process the sample
-      # update is_used = true
-        samples = eval(post_request['sample'])
-        samplesToBeStored = []
-
-        for sample in samples:
-          new_sample = ndbmodels.Sample(value = str(sample))
-          samplesToBeStored.append(new_sample)
-
-        sample_ids = ndb.put_multi(samplesToBeStored)
         response = {
-          'cmd' : 'delete'
+          'cmd' : 'update_ack',
+          'n_samples' : ndbmodels.Model.getSampleCount(),
+          'wx' : wx
         }
-
-          # new_sample_id = future_object.get_result().id()
-          # new_sample = ndbmodels.Sample.get_by_id(new_sample_id)
-
-          # train with the new sample here
-          # update label_self_predicted property
-          # change the used flag to true
-          # save it
 
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.write(json.dumps(response))
